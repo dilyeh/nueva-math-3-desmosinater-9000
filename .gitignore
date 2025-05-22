@@ -1,2 +1,5 @@
 .DS_Store
 test_fr.py
+*.jpg
+*.png
+*.txt
