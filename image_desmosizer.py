@@ -75,8 +75,6 @@ def calculate_gradient(subsection):
     return math.sqrt(gradient_x * gradient_x + gradient_y * gradient_y)
 
 
-
-
 def get_equations(edged_image, output_name):
     bmp = potrace.Bitmap(edged_image)
     print("tracing...")
