@@ -12,8 +12,8 @@ V_KERNEL = H_KERNEL.transpose()
 
 
 def main():
-    source_image = "mario.jpg"
-    output_name = "mario.txt"
+    source_image = "xkcd.png"
+    output_name = "xkcd.txt"
     # load image
     with Image.open(f"images/{source_image}").convert("L") as im: # L changes the "mode" to 8-bit integer
         im.show()
