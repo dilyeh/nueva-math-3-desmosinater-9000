@@ -12,13 +12,13 @@ V_KERNEL = H_KERNEL.transpose()
 
 
 def main():
-    source_image = "github_octocat.png"
-    output_name = "octocat.txt"
+    source_image = "mario.jpg"
+    output_name = "mario.txt"
     # load image
     with Image.open(f"images/{source_image}").convert("L") as im: # L changes the "mode" to 8-bit integer
         im.show()
 
-    edged_image = detect_edges(im.transpose(method=Image.Transpose.ROTATE_180))
+    edged_image = detect_edges(im.transpose(Image.Transpose.ROTATE_180).transpose(Image.FLIP_LEFT_RIGHT))
     cleaned_image = clean_up_edges(edged_image, 20, 25)
 
     get_equations(cleaned_image, output_name)
