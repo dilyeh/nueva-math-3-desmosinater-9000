@@ -12,14 +12,14 @@ V_KERNEL = H_KERNEL.transpose()
 
 
 def main():
-    source_image = "po.jpg"
-    output_name = "po.txt"
+    source_image = "shrek_lined.png"
+    output_name = "shrek_lined.txt"
     # load image
     with Image.open(f"images/{source_image}").convert("L") as im: # L changes the "mode" to 8-bit integer
         im.show()
 
     edged_image = detect_edges(im.transpose(Image.Transpose.ROTATE_180).transpose(Image.FLIP_LEFT_RIGHT), 100)
-    cleaned_image = clean_up_edges(edged_image, 10, 20)
+    cleaned_image = clean_up_edges(edged_image, 10, 15)
 
     get_equations(cleaned_image, output_name)
 
