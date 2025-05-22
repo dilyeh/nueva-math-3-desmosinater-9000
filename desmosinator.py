@@ -12,8 +12,8 @@ V_KERNEL = H_KERNEL.transpose()
 
 
 def main():
-    source_image = "shrek_lined.png"
-    output_name = "shrek_lined.txt"
+    source_image = "desmos.png"
+    output_name = "desmos.txt"
     # load image
     with Image.open(f"images/{source_image}").convert("L") as im: # L changes the "mode" to 8-bit integer
         im.show()
@@ -116,11 +116,11 @@ def get_equations(edged_image, output_name):
 
 
 def get_line_between_points(x1, y1, x2, y2):
-    if x1 == x2:
+    if abs(x1 - x2) < 0.0000000001: # if it's very small such that it would be use e
         # a couple reasons why this looks cursed:
         # - to output "{hi!}", you have to do "{{hi!}}"
         # when copy+pasting from desmos, y=x{2<x<5} -> y=x\left\{2<x<5\right\}. but now you have to escape the "\"s with "\\", so you get \\{{\\}} and \\left and \\right
-        equation = "x={x1} \\left\\{{{y1} < y < {y2}\\right\\}}\n".format( 
+        equation = "x={x1:.10f} \\left\\{{{y1:.10f} < y < {y2:.10f}\\right\\}}\n".format( 
             x1=x1, 
             y1=y1 if (y1 < y2) else y2,
             y2=y1 if (y1 > y2) else y2
@@ -128,7 +128,7 @@ def get_line_between_points(x1, y1, x2, y2):
         return equation
     else:
         m = (y2 - y1) / (x2 - x1)
-        equation = "y-{y1}={m}(x-{x1}) \\left\\{{{start} < x < {end}\\right\\}}\n".format(
+        equation = "y-{y1:.10f}={m:.10f}(x-{x1:.10f}) \\left\\{{{start:.10f} < x < {end:.10f}\\right\\}}\n".format(
             y1=y1, m=m, x1=x1,
             start=x1 if (x1 < x2) else x2,
             end=x1 if (x1 > x2) else x2
