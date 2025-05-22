@@ -12,22 +12,24 @@ V_KERNEL = H_KERNEL.transpose()
 
 
 def main():
-    source_image = "xkcd.png"
-    output_name = "xkcd.txt"
+    source_image = "po.jpg"
+    output_name = "po.txt"
     # load image
     with Image.open(f"images/{source_image}").convert("L") as im: # L changes the "mode" to 8-bit integer
         im.show()
 
-    edged_image = detect_edges(im.transpose(Image.Transpose.ROTATE_180).transpose(Image.FLIP_LEFT_RIGHT))
-    cleaned_image = clean_up_edges(edged_image, 20, 25)
+    edged_image = detect_edges(im.transpose(Image.Transpose.ROTATE_180).transpose(Image.FLIP_LEFT_RIGHT), 100)
+    cleaned_image = clean_up_edges(edged_image, 10, 20)
 
     get_equations(cleaned_image, output_name)
 
 
-def detect_edges(im):
+def detect_edges(im, sensitivity):
     print("detecting edges!")
-    width, height = im.size
-    image = np.array(im.getdata()).reshape(height, width) # height and width are reversed because reshape(A,B) returns an array with A rows of B columns
+    imwidth, imheight = im.size
+    image = np.array(im.getdata()).reshape(imheight, imwidth) # height and width are reversed because reshape(A,B) returns an array with A rows of B columns
+    image = np.pad(image, 1) # padding
+    height, width = image.shape
     edged_image = np.zeros(image.shape)
     for x in range(width):
         for y in range (height):
@@ -36,8 +38,9 @@ def detect_edges(im):
                 edged_image[y, x] = calculate_gradient(subsection)
         if x % 100 == 0: # logging
             print(f"x = {x} is done")
-
-    edged_image[:] = np.where(edged_image > 150, 255, 0) # this basically says, for each element in the np array: element = (element > 127) ? 255 : 0
+    edged_image[:] = np.where(edged_image > sensitivity, 255, 0) # this basically says, for each element in the np array: element = (element > 127) ? 255 : 0
+    # remove padding
+    edged_image = edged_image[1:height-1, 1:width-1]
     print("edge detection done!")
     test = Image.fromarray(edged_image).convert("1")
     test.show()
