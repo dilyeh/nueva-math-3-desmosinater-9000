@@ -6,19 +6,17 @@ import potrace
 H_KERNEL = np.array([[-1, 0, 1],
                     [-2, 0, 2],
                     [-1, 0, 1]])
-
-
 V_KERNEL = H_KERNEL.transpose()
 
 
 def main():
-    source_image = "desmos.png"
-    output_name = "desmos.txt"
+    source_image = "usa!.jpg"
+    output_name = "usa!.txt"
     # load image
     with Image.open(f"images/{source_image}").convert("L") as im: # L changes the "mode" to 8-bit integer
         im.show()
 
-    edged_image = detect_edges(im.transpose(Image.Transpose.ROTATE_180).transpose(Image.FLIP_LEFT_RIGHT), 100)
+    edged_image = detect_edges(im.transpose(Image.Transpose.ROTATE_180).transpose(Image.FLIP_LEFT_RIGHT), 150)
     cleaned_image = clean_up_edges(edged_image, 10, 15)
 
     get_equations(cleaned_image, output_name)
@@ -38,13 +36,18 @@ def detect_edges(im, sensitivity):
                 edged_image[y, x] = calculate_gradient(subsection)
         if x % 100 == 0: # logging
             print(f"x = {x} is done")
-    edged_image[:] = np.where(edged_image > sensitivity, 255, 0) # this basically says, for each element in the np array: element = (element > 127) ? 255 : 0
     # remove padding
     edged_image = edged_image[1:height-1, 1:width-1]
+    edged_image = reduce_to_bitmap(edged_image, sensitivity)
     print("edge detection done!")
     test = Image.fromarray(edged_image).convert("1")
     test.show()
     return edged_image
+
+def reduce_to_bitmap(image, sensitivity):
+    image[:] = np.where(image > sensitivity, 255, 0) # this basically says, for each element in the np array: element = (element > 127) ? 255 : 0
+    return image
+
 
 
 def clean_up_edges(edged_image, kernel_size, sensitivity):
