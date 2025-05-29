@@ -8,7 +8,7 @@ This project was created because I was too lazy to trace Shrek's swamp in Desmos
 3. Run `desmosinator.py`. It may take a lil while.
 4. Once the script finishes running, go into the `outputs` folder and find your output file. Copy and paste all the equations into Desmos, and there you go!
 
-NOTE: if your output is more than around 5000 equations long, don't expect Desmos to be able to handle it.
+NOTE: if your output is more than around 10000 equations long, don't expect Desmos to be able to handle it.
 
 ## How does this work?
 First, this script uses the Sobel operator to detect edges in the source image. It then cleans it up to (attempt to) reduce the noise in the image. Next, it uses the [PyPotrace](https://github.com/flupke/pypotrace) library to convert the bitmap image to a vector graphic composed of Bézier curves and corners. Finally, the script spits out the equations of those Bézier curves and corners into a Desmos-copy-pasteable form.

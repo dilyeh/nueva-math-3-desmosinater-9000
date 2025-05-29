@@ -3,21 +3,22 @@ import numpy as np
 import math
 import potrace
 
-H_KERNEL = np.array([[-1, 0, 1],
-                    [-2, 0, 2],
-                    [-1, 0, 1]])
-V_KERNEL = H_KERNEL.transpose()
+V_KERNEL = np.array([[-1, 0, 1],
+                     [-2, 0, 2],
+                     [-1, 0, 1]])
+H_KERNEL = V_KERNEL.transpose()
 
 
 def main():
-    source_image = "usa!.jpg"
-    output_name = "usa!.txt"
+    source_image = "sea_otter.jpg"
+    output_name = "sea_otter.txt"
     # load image
     with Image.open(f"images/{source_image}").convert("L") as im: # L changes the "mode" to 8-bit integer
         im.show()
-
-    edged_image = detect_edges(im.transpose(Image.Transpose.ROTATE_180).transpose(Image.FLIP_LEFT_RIGHT), 150)
-    cleaned_image = clean_up_edges(edged_image, 10, 15)
+    
+    # process image
+    edged_image = detect_edges(im.transpose(Image.Transpose.ROTATE_180).transpose(Image.FLIP_LEFT_RIGHT), 220)
+    cleaned_image = clean_up_edges(edged_image, 10, 25)
 
     get_equations(cleaned_image, output_name)
 
