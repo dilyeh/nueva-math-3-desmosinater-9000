@@ -13,11 +13,12 @@ def main():
     source_image = "sea_otter.jpg"
     output_name = "sea_otter.txt"
     # load image
-    with Image.open(f"images/{source_image}").convert("L") as im: # L changes the "mode" to 8-bit integer
+    with Image.open(f"images/{source_image}").convert("RGB") as im: # L changes the "mode" to 8-bit integer
         im.show()
+        print(im.mode)
     
     # process image
-    edged_image = detect_edges(im.transpose(Image.Transpose.ROTATE_180).transpose(Image.FLIP_LEFT_RIGHT), 220)
+    edged_image = detect_edges(im.transpose(Image.Transpose.ROTATE_180).transpose(Image.FLIP_LEFT_RIGHT), 900)
     cleaned_image = clean_up_edges(edged_image, 10, 25)
 
     get_equations(cleaned_image, output_name)
@@ -26,29 +27,50 @@ def main():
 def detect_edges(im, sensitivity):
     print("detecting edges!")
     imwidth, imheight = im.size
-    image = np.array(im.getdata()).reshape(imheight, imwidth) # height and width are reversed because reshape(A,B) returns an array with A rows of B columns
-    image = np.pad(image, 1) # padding
-    height, width = image.shape
+    image = np.array(im.getdata()).reshape(imheight, imwidth, 3) # height and width are reversed because reshape(A,B) returns an array with A rows of B columns
+
+    image = np.pad(image, pad_width=((1,1), (1,1), (0,0))) # padding
+
+    height, width, ncolors = image.shape
+    print(f"shape = {image.shape}")
     edged_image = np.zeros(image.shape)
     for x in range(width):
         for y in range (height):
             if x != 0 and x != width-1 and y != 0 and y != height-1:
-                subsection = image[y-1:y+2, x-1:x+2]
-                edged_image[y, x] = calculate_gradient(subsection)
+                # calculate gradient for each color channel
+                subsection = image[y-1:y+2, x-1:x+2, :]
+                edged_image[y, x, :] = calculate_gradient(subsection)
         if x % 100 == 0: # logging
             print(f"x = {x} is done")
-    # remove padding
-    edged_image = edged_image[1:height-1, 1:width-1]
+
+    colored_test = Image.fromarray(edged_image.astype("uint8"), 'RGB')
+    colored_test.show()
+
+    # post-processing
+    edged_image = edged_image[1:height-1, 1:width-1, :]
     edged_image = reduce_to_bitmap(edged_image, sensitivity)
     print("edge detection done!")
-    test = Image.fromarray(edged_image).convert("1")
+
+    test = Image.fromarray(edged_image)
     test.show()
+
     return edged_image
 
-def reduce_to_bitmap(image, sensitivity):
-    image[:] = np.where(image > sensitivity, 255, 0) # this basically says, for each element in the np array: element = (element > 127) ? 255 : 0
-    return image
 
+def calculate_gradient(subsection): # size = (3,3,3)
+    pixel = np.zeros(3) 
+    for color_channel in range(3):
+        gradient_x = np.sum(subsection[:,:,color_channel] * H_KERNEL)
+        gradient_y = np.sum(subsection[:,:,color_channel] * V_KERNEL)
+        pixel[color_channel] = np.sqrt(gradient_x * gradient_x + gradient_y * gradient_y)
+    return pixel
+
+
+def reduce_to_bitmap(image, sensitivity):
+    # get sum
+    sum = np.sum(image, axis=2)
+    sum[:] = np.where(sum > sensitivity, 255, 0) # this basically says, for each element in the np array: element = (element > 127) ? 255 : 0
+    return sum
 
 
 def clean_up_edges(edged_image, kernel_size, sensitivity):
@@ -74,12 +96,6 @@ def clean_up_edges(edged_image, kernel_size, sensitivity):
     test = Image.fromarray(image_to_return).convert("1")
     test.show()
     return clean_image
-
-
-def calculate_gradient(subsection):
-    gradient_x = np.sum(subsection * H_KERNEL)
-    gradient_y = np.sum(subsection * V_KERNEL)
-    return math.sqrt(gradient_x * gradient_x + gradient_y * gradient_y)
 
 
 def get_equations(edged_image, output_name):
