@@ -1,5 +1,6 @@
 from PIL import Image
 import numpy as np
+from scipy.ndimage import convolve
 import math
 import potrace
 
@@ -19,37 +20,30 @@ def main():
     
     # process image
     edged_image = detect_edges(im.transpose(Image.Transpose.ROTATE_180).transpose(Image.FLIP_LEFT_RIGHT), 900)
-    cleaned_image = clean_up_edges(edged_image, 10, 25)
+    cleaned_image = clean_up_edges(edged_image, 5, 5)
 
-    get_equations(cleaned_image, output_name)
+    #get_equations(cleaned_image, output_name)
 
 
 def detect_edges(im, sensitivity):
     print("detecting edges!")
     imwidth, imheight = im.size
     image = np.array(im.getdata()).reshape(imheight, imwidth, 3) # height and width are reversed because reshape(A,B) returns an array with A rows of B columns
-
-    image = np.pad(image, pad_width=((1,1), (1,1), (0,0))) # padding
-
-    height, width, ncolors = image.shape
-    print(f"shape = {image.shape}")
     edged_image = np.zeros(image.shape)
-    for x in range(width):
-        for y in range (height):
-            if x != 0 and x != width-1 and y != 0 and y != height-1:
-                # calculate gradient for each color channel
-                subsection = image[y-1:y+2, x-1:x+2, :]
-                edged_image[y, x, :] = calculate_gradient(subsection)
-        if x % 100 == 0: # logging
-            print(f"x = {x} is done")
+
+    for color_channel in range(3): # I used chatgpt to find scipy.ndimage.convolve, which makes things a lot faster (even though my old method works fine)
+        h_edges = convolve(image[:, :, color_channel], H_KERNEL)
+        v_edges = convolve(image[:, :, color_channel], V_KERNEL)
+        edged_image[:,:,color_channel] = np.sqrt(h_edges ** 2 + v_edges ** 2)
+        print(f"color_channel {color_channel} done!")
+    
+    print("edge detection done!")
 
     colored_test = Image.fromarray(edged_image.astype("uint8"), 'RGB')
     colored_test.show()
 
     # post-processing
-    edged_image = edged_image[1:height-1, 1:width-1, :]
     edged_image = reduce_to_bitmap(edged_image, sensitivity)
-    print("edge detection done!")
 
     test = Image.fromarray(edged_image)
     test.show()
@@ -57,19 +51,10 @@ def detect_edges(im, sensitivity):
     return edged_image
 
 
-def calculate_gradient(subsection): # size = (3,3,3)
-    pixel = np.zeros(3) 
-    for color_channel in range(3):
-        gradient_x = np.sum(subsection[:,:,color_channel] * H_KERNEL)
-        gradient_y = np.sum(subsection[:,:,color_channel] * V_KERNEL)
-        pixel[color_channel] = np.sqrt(gradient_x * gradient_x + gradient_y * gradient_y)
-    return pixel
-
-
 def reduce_to_bitmap(image, sensitivity):
     # get sum
     sum = np.sum(image, axis=2)
-    sum[:] = np.where(sum > sensitivity, 255, 0) # this basically says, for each element in the np array: element = (element > 127) ? 255 : 0
+    sum[:] = np.where(sum > sensitivity, 255, 0) # this basically says, for each element in the np array: element = (element > 127) ? 1 : 0
     return sum
 
 
@@ -77,23 +62,13 @@ def clean_up_edges(edged_image, kernel_size, sensitivity):
     print("cleaning!")
     # pad the image
     CLEAN_KERNEL = np.ones((kernel_size, kernel_size))
-    padding = math.floor(CLEAN_KERNEL.shape[0] / 2)
-    padded_image = np.pad(edged_image, padding)
-    # go through and do the clean-up
-    height, width = edged_image.shape
-    clean_image = padded_image
-    for x in range(width):
-        for y in range(height):
-            if (not (x < padding or x > width - padding or y < padding or y > height - padding)):
-                subsection = padded_image[y-padding:y+padding+1, x-padding:x+padding+1]
-                if np.sum(subsection) <= sensitivity*255: # 3 is arbitrary
-                    clean_image[y, x] = 0
-        if x % 100 == 0: # logging
-            print(f"x = {x} is done!")
-    # get rid of padding
-    image_to_return = clean_image[padding:height-padding, padding:width-padding]
+
+    heatmap = convolve(edged_image, CLEAN_KERNEL, mode="constant", cval=0)
+    mask = heatmap > sensitivity * 255
+    clean_image = mask * edged_image
+
     print("cleaning done!")
-    test = Image.fromarray(image_to_return).convert("1")
+    test = Image.fromarray(clean_image)
     test.show()
     return clean_image
 
