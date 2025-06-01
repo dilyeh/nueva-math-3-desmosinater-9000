@@ -11,7 +11,7 @@ This project was created because I was too lazy to trace Shrek's swamp in Desmos
 NOTE: if your output is more than around 10000 equations long, don't expect Desmos to be able to handle it.
 
 ## How does this work?
-First, this script uses the Sobel operator to detect edges in the source image. It then cleans it up to (attempt to) reduce the noise in the image. Next, it uses the [PyPotrace](https://github.com/flupke/pypotrace) library to convert the bitmap image to a vector graphic composed of Bézier curves and corners. Finally, the script spits out the equations of those Bézier curves and corners into a Desmos-copy-pasteable form.
+First, this script uses the Sobel operator to detect edges in the source image. It then cleans it up to (attempt to) reduce the noise in the image. Next, it uses the [Python Potrace](https://github.com/tatarize/potrace) library to convert the bitmap image to a vector graphic composed of Bézier curves and corners. Finally, the script spits out the equations of those Bézier curves and corners into a Desmos-copy-pasteable form.
 
 ## Credit
 Credit to kevinjycui's [DesmosBezierRenderer](https://github.com/kevinjycui/DesmosBezierRenderer?tab=readme-ov-file) for the original idea and a (frankly) much better execution of it. This is how I stumbled upon Potrace.
