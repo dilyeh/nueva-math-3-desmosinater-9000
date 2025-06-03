@@ -15,17 +15,23 @@ def main():
     output_name = "sea_otter.txt"
     # load image
     with Image.open(f"images/{source_image}").convert("RGB") as im: # L changes the "mode" to 8-bit integer
-        im.show()
-        print(im.mode)
+        pass
+        #im.show()
     
     # process image
-    edged_image = detect_edges(im.transpose(Image.Transpose.ROTATE_180).transpose(Image.FLIP_LEFT_RIGHT), 900)
-    cleaned_image = clean_up_edges(edged_image, 5, 5)
+    edged_image = detect_edges(im.transpose(Image.Transpose.ROTATE_180).transpose(Image.FLIP_LEFT_RIGHT))
+    edged_image = reduce_to_bitmap(edged_image, 2) # sensitivity is kind of a cooked parameter, just kinda vibe it out. > sensitivity = < white pixels
+
+    test_image = np.array([[5,5,5,5,5],
+                           [0,0,0,0,0],
+                           [0,5,0,0,0],
+                           [0,0,0,0,0]])
+    cleaned_image = clean_up_edges(edged_image, 3, 1)
 
     #get_equations(cleaned_image, output_name)
 
 
-def detect_edges(im, sensitivity):
+def detect_edges(im):
     print("detecting edges!")
     imwidth, imheight = im.size
     image = np.array(im.getdata()).reshape(imheight, imwidth, 3) # height and width are reversed because reshape(A,B) returns an array with A rows of B columns
@@ -39,36 +45,52 @@ def detect_edges(im, sensitivity):
     
     print("edge detection done!")
 
+    # testing
     colored_test = Image.fromarray(edged_image.astype("uint8"), 'RGB')
     colored_test.show()
-
-    # post-processing
-    edged_image = reduce_to_bitmap(edged_image, sensitivity)
-
-    test = Image.fromarray(edged_image)
-    test.show()
 
     return edged_image
 
 
 def reduce_to_bitmap(image, sensitivity):
     # get sum
-    sum = np.sum(image, axis=2)
-    sum[:] = np.where(sum > sensitivity, 255, 0) # this basically says, for each element in the np array: element = (element > 127) ? 1 : 0
-    return sum
+    adjusted_image = np.zeros(image.shape)
+    for color_channel in range(3):
+        adjusted_image[:,:,color_channel] = (((image[:,:,color_channel]) / 255) ** 2)
+    sum = np.sum(adjusted_image, axis=2)
+    
+    bitmap = np.where(sum > sensitivity, 255, 0).astype("uint8") # this basically says, for each element in the np array: element = (element > 127) ? 1 : 0
+
+    test = Image.fromarray(bitmap.astype("uint8"), mode="L")
+    test.show()
+
+    return bitmap
 
 
-def clean_up_edges(edged_image, kernel_size, sensitivity):
+def clean_up_edges(edged_image, kernel_size=3, sensitivity=1): # TODOOOOOOOOOOOOOOOOOOOOOOOooo: wtf is going on here
     print("cleaning!")
-    # pad the image
+
+    # turn edged_image into binary 1 or 0
+    edges = (edged_image > 0).astype("uint8")
+
+    # convolve create the heatmap
     CLEAN_KERNEL = np.ones((kernel_size, kernel_size))
+    heatmap = convolve(edges, CLEAN_KERNEL, mode="constant", cval=0)
 
-    heatmap = convolve(edged_image, CLEAN_KERNEL, mode="constant", cval=0)
-    mask = heatmap > sensitivity * 255
-    clean_image = mask * edged_image
+    mask = np.where(heatmap > sensitivity, 1, 0) # mask is a binary bitmap
 
-    print("cleaning done!")
-    test = Image.fromarray(clean_image)
+    # i'm so confused
+    mask_image = Image.fromarray((mask*255).astype("uint8"))
+    mask_image.show()
+
+    clean_image = (mask * edges) * 255
+
+    print(f"HEATMAP -- dtype = {heatmap.dtype} | max = {np.max(heatmap)} | shape = {heatmap.shape}")
+    print(f"MASK ----- dtype = {mask.dtype} | max = {np.max(mask)} | shape = {mask.shape}")
+    print(f"CLEAN ---- dtype = {clean_image.dtype} | max = {np.max(clean_image)} | shape= {clean_image.shape}")
+
+    #print("cleaning done!")
+    test = Image.fromarray((clean_image).astype("uint8"))
     test.show()
     return clean_image
 
